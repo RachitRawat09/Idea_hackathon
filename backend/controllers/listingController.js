@@ -77,4 +77,24 @@ exports.deleteListing = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
+};
+
+// Get all unique categories
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await Listing.distinct('category');
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get all unique departments
+exports.getDepartments = async (req, res) => {
+  try {
+    const departments = await Listing.distinct('department');
+    res.json(departments);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
 }; 

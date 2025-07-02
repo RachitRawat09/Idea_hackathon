@@ -46,5 +46,9 @@ router.post('/upload-test', upload.single('image'), (req, res) => {
   });
 });
 
+// Get all unique categories
+router.get('/categories', listingController.getCategories);
+// Get all unique departments
+router.get('/departments', listingController.getDepartments);
 
 module.exports = router; 

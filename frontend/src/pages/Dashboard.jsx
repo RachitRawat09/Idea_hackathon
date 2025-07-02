@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getListings } from '../api/listings.jsx';
+import { getListings, getCategories, getDepartments } from '../api/listings.jsx';
 import ListingCard from '../components/ListingCard.jsx';
-
-const categories = ['Books', 'Calculators', 'Laptops', 'Lab Equipment'];
-const departments = ['Physics', 'Chemistry', 'Math', 'Engineering', 'Other'];
 
 const Dashboard = () => {
   const [listings, setListings] = useState([]);
@@ -11,6 +8,9 @@ const Dashboard = () => {
   const [category, setCategory] = useState('');
   const [department, setDepartment] = useState('');
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [filtersLoading, setFiltersLoading] = useState(true);
 
   const fetchListings = async () => {
     setLoading(true);
@@ -28,6 +28,26 @@ const Dashboard = () => {
     // eslint-disable-next-line
   }, [search, category, department]);
 
+  useEffect(() => {
+    const fetchFilters = async () => {
+      setFiltersLoading(true);
+      try {
+        const [cats, deps] = await Promise.all([
+          getCategories(),
+          getDepartments()
+        ]);
+        setCategories(cats);
+        setDepartments(deps);
+      } catch (err) {
+        setCategories([]);
+        setDepartments([]);
+      } finally {
+        setFiltersLoading(false);
+      }
+    };
+    fetchFilters();
+  }, []);
+
   return (
     <div className="flex flex-col md:flex-row gap-6 mt-6">
       {/* Sidebar */}
@@ -39,6 +59,7 @@ const Dashboard = () => {
             className="w-full border p-2 rounded"
             value={category}
             onChange={e => setCategory(e.target.value)}
+            disabled={filtersLoading}
           >
             <option value="">All</option>
             {categories.map(cat => (
@@ -52,6 +73,7 @@ const Dashboard = () => {
             className="w-full border p-2 rounded"
             value={department}
             onChange={e => setDepartment(e.target.value)}
+            disabled={filtersLoading}
           >
             <option value="">All</option>
             {departments.map(dep => (
@@ -91,7 +113,18 @@ const Dashboard = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map(listing => (
-              <ListingCard key={listing._id} listing={listing} onView={() => {}} />
+              <ListingCard
+                key={listing._id || listing.id}
+                id={listing._id || listing.id}
+                title={listing.title}
+                price={listing.price}
+                image={listing.image}
+                category={listing.category}
+                condition={listing.condition || 'Good'}
+                sellerName={listing.seller?.name || 'N/A'}
+                sellerRating={listing.seller?.rating || 0}
+                date={listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : ''}
+              />
             ))}
           </div>
         )}

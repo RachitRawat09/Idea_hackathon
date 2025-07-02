@@ -17,4 +17,14 @@ export const createListing = async (data, token) => {
     headers: { Authorization: `Bearer ${token}` }
   });
   return res.data;
+};
+
+export const getCategories = async () => {
+  const res = await axios.get(`${API_URL}/categories`);
+  return res.data;
+};
+
+export const getDepartments = async () => {
+  const res = await axios.get(`${API_URL}/departments`);
+  return res.data;
 }; 

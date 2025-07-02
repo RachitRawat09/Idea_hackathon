@@ -5,12 +5,12 @@ import { FaStar } from 'react-icons/fa';
 const ListingCard = ({
   id,
   title,
-  price,
+  price = 0,
   image,
   category,
   condition,
   sellerName,
-  sellerRating,
+  sellerRating = 0,
   date,
 }) => {
   return (
@@ -23,7 +23,7 @@ const ListingCard = ({
           <div className="flex justify-between items-start">
             <h3 className="text-lg font-semibold line-clamp-2">{title}</h3>
             <span className="font-bold text-green-600">
-              ${price.toFixed(2)}
+              {typeof price === 'number' && !isNaN(price) ? `$${price.toFixed(2)}` : 'N/A'}
             </span>
           </div>
           <div className="mt-2 flex items-center text-sm text-gray-500">
@@ -44,7 +44,7 @@ const ListingCard = ({
                     fill="currentColor"
                   />
                   <span className="ml-1 text-gray-600">
-                    {sellerRating.toFixed(1)}
+                    {typeof sellerRating === 'number' && !isNaN(sellerRating) ? sellerRating.toFixed(1) : 'N/A'}
                   </span>
                 </div>
               </div>

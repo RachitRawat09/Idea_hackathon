@@ -1,18 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaSearch, FaFilter, FaTimes } from 'react-icons/fa';
 import ListingCard from '../components/ListingCard.jsx';
+import { getListings, getCategories } from '../api/listings.jsx';
 
-// Mock categories for demonstration
-const categories = [
-  'All Categories',
-  'Textbooks',
-  'Electronics',
-  'Calculators',
-  'Lab Equipment',
-  'Notes & Study Guides',
-  'Office Supplies',
-  'Other',
-];
 // Mock conditions for demonstration
 const conditions = [
   'Any Condition',
@@ -21,81 +11,6 @@ const conditions = [
   'Good',
   'Acceptable',
 ];
-// Mock data for demonstration
-const mockListings = [
-  {
-    id: '1',
-    title: 'Calculus Early Transcendentals 8th Edition',
-    price: 45.99,
-    image:
-      'https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTF8fGJvb2t8ZW58MHx8MHx8&auto=format&fit=crop&w=800&q=60',
-    category: 'Textbooks',
-    condition: 'Good',
-    sellerName: 'John D.',
-    sellerRating: 4.5,
-    date: '2 days ago',
-  },
-  {
-    id: '2',
-    title: 'TI-84 Plus Graphing Calculator',
-    price: 65.0,
-    image:
-      'https://images.unsplash.com/photo-1587132137056-bfbf0166836e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8Y2FsY3VsYXRvcnxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60',
-    category: 'Calculators',
-    condition: 'Like New',
-    sellerName: 'Sarah M.',
-    sellerRating: 4.8,
-    date: '5 days ago',
-  },
-  {
-    id: '3',
-    title: 'Physics for Scientists and Engineers',
-    price: 38.5,
-    image:
-      'https://images.unsplash.com/photo-1589998059171-988d887df646?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8dGV4dGJvb2t8ZW58MHx8MHx8&auto=format&fit=crop&w=800&q=60',
-    category: 'Textbooks',
-    condition: 'Good',
-    sellerName: 'Alex J.',
-    sellerRating: 4.7,
-    date: '1 week ago',
-  },
-  {
-    id: '4',
-    title: 'MacBook Pro 2019 13-inch',
-    price: 750.0,
-    image:
-      'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Nnx8bWFjYm9va3xlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60',
-    category: 'Electronics',
-    condition: 'Very Good',
-    sellerName: 'Michael T.',
-    sellerRating: 4.9,
-    date: '3 days ago',
-  },
-  {
-    id: '5',
-    title: 'Lab Coat Size M',
-    price: 15.0,
-    image:
-      'https://images.unsplash.com/photo-1581093588401-fbb62a02f120?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bGFiJTIwY29hdHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60',
-    category: 'Lab Equipment',
-    condition: 'Like New',
-    sellerName: 'Emma L.',
-    sellerRating: 4.6,
-    date: '6 days ago',
-  },
-  {
-    id: '6',
-    title: 'Organic Chemistry Study Guide',
-    price: 12.99,
-    image:
-      'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8c3R1ZHklMjBndWlkZXxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=800&q=60',
-    category: 'Notes & Study Guides',
-    condition: 'Good',
-    sellerName: 'David R.',
-    sellerRating: 4.4,
-    date: '4 days ago',
-  },
-];
 
 const Browse = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -103,27 +18,58 @@ const Browse = () => {
   const [selectedCondition, setSelectedCondition] = useState('Any Condition');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [showFilters, setShowFilters] = useState(false);
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
+  const [filtersLoading, setFiltersLoading] = useState(true);
 
-  // Filter listings based on selected filters
-  const filteredListings = mockListings.filter((listing) => {
-    if (
-      searchTerm &&
-      !listing.title.toLowerCase().includes(searchTerm.toLowerCase())
-    ) {
-      return false;
-    }
-    if (
-      selectedCategory !== 'All Categories' &&
-      listing.category !== selectedCategory
-    ) {
-      return false;
-    }
+  // Fetch categories from backend
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setFiltersLoading(true);
+      try {
+        const cats = await getCategories();
+        setCategories(cats);
+      } catch (err) {
+        setCategories([]);
+      } finally {
+        setFiltersLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Fetch real listings from backend
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoading(true);
+      try {
+        const params = {};
+        if (searchTerm) params.search = searchTerm;
+        if (selectedCategory !== 'All Categories') params.category = selectedCategory;
+        // No backend filter for condition/price yet, so filter on frontend
+        const data = await getListings(params);
+        setListings(data);
+      } catch (err) {
+        setListings([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchListings();
+    // eslint-disable-next-line
+  }, [searchTerm, selectedCategory]);
+
+  // Frontend filtering for condition and price
+  const filteredListings = listings.filter((listing) => {
+    // Condition
     if (
       selectedCondition !== 'Any Condition' &&
       listing.condition !== selectedCondition
     ) {
       return false;
     }
+    // Price range
     if (priceRange.min && listing.price < parseFloat(priceRange.min)) {
       return false;
     }
@@ -163,6 +109,7 @@ const Browse = () => {
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="md:hidden inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+            disabled={filtersLoading}
           >
             <FaFilter size={20} className="mr-2" />
             Filters
@@ -183,7 +130,9 @@ const Browse = () => {
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              disabled={filtersLoading}
             >
+              <option value="All Categories">All Categories</option>
               {categories.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -370,10 +319,23 @@ const Browse = () => {
         </p>
       </div>
       {/* Listings Grid */}
-      {filteredListings.length > 0 ? (
+      {loading ? (
+        <div>Loading...</div>
+      ) : filteredListings.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredListings.map((listing) => (
-            <ListingCard key={listing.id} {...listing} />
+            <ListingCard
+              key={listing._id || listing.id}
+              id={listing._id || listing.id}
+              title={listing.title}
+              price={listing.price}
+              image={listing.image}
+              category={listing.category}
+              condition={listing.condition || 'Good'}
+              sellerName={listing.seller?.name || 'N/A'}
+              sellerRating={listing.seller?.rating || 0}
+              date={listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : ''}
+            />
           ))}
         </div>
       ) : (
