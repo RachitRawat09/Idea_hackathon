@@ -37,6 +37,19 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  // Subscription/plan fields
+  plan: {
+    type: String,
+    enum: ['free', 'premium'],
+    default: 'free',
+  },
+  listingsThisPeriod: {
+    type: Number,
+    default: 0,
+  },
+  planExpiresAt: {
+    type: Date,
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema); 
