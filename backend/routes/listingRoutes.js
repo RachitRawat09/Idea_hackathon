@@ -4,6 +4,7 @@ const listingController = require('../controllers/listingController');
 const upload = require('../middlewares/upload');
 const { uploadToCloudinary } = require('../utils/cloudinary');
 const fs = require('fs');
+const authMiddleware = require('../middlewares/auth');
 
 // Create listing (protected)
 // router.post('/', authMiddleware, listingController.createListing);
@@ -50,5 +51,12 @@ router.post('/upload-test', upload.single('image'), (req, res) => {
 router.get('/categories', listingController.getCategories);
 // Get all unique departments
 router.get('/departments', listingController.getDepartments);
+
+// Get all purchases for a user
+router.get('/purchases', listingController.getPurchasesByUser);
+
+// Reviews
+router.post('/:id/reviews', authMiddleware, listingController.addReview);
+router.get('/:id/reviews', listingController.getReviews);
 
 module.exports = router; 

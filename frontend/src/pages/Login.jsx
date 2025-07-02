@@ -17,7 +17,7 @@ const Login = () => {
     e.preventDefault();
     setError('');
     if (!email || !password) {
-      setError('Please fill in all fields');
+      
       toast.error('Please fill in all fields');
       return;
     }

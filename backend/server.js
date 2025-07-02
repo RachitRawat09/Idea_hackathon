@@ -19,6 +19,9 @@ app.use('/api/auth', authRoutes);
 const listingRoutes = require('./routes/listingRoutes');
 app.use('/api/listings', listingRoutes);
 
+const messageRoutes = require('./routes/messageRoutes');
+app.use('/api/messages', messageRoutes);
+
 // Error handling middleware (to be added)
 
 // MongoDB connection

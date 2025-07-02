@@ -1,6 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { getListings, getCategories, getDepartments } from '../api/listings.jsx';
+import React, { useEffect, useState, useContext } from 'react';
+import { getListings, getPurchasesByUser } from '../api/listings.jsx';
 import ListingCard from '../components/ListingCard.jsx';
+import { AuthContext } from '../context/AuthContext.jsx';
+
+const hardcodedCategories = [
+  'Textbooks',
+  'Electronics',
+  'Calculators',
+  'Lab Equipment',
+  'Notes & Study Guides',
+  'Office Supplies',
+  'Other',
+];
+const hardcodedDepartments = [
+  'Computer Science',
+  'Mechanical',
+  'Electrical',
+  'Civil',
+  'Mathematics',
+  'Physics',
+  'Chemistry',
+  'Other',
+];
 
 const Dashboard = () => {
   const [listings, setListings] = useState([]);
@@ -8,9 +29,12 @@ const Dashboard = () => {
   const [category, setCategory] = useState('');
   const [department, setDepartment] = useState('');
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [filtersLoading, setFiltersLoading] = useState(true);
+  const [categories] = useState(hardcodedCategories);
+  const [departments] = useState(hardcodedDepartments);
+  const [filtersLoading] = useState(false);
+  const { user } = useContext(AuthContext);
+  const [activeTab, setActiveTab] = useState('listings');
+  const [purchases, setPurchases] = useState([]);
 
   const fetchListings = async () => {
     setLoading(true);
@@ -29,24 +53,21 @@ const Dashboard = () => {
   }, [search, category, department]);
 
   useEffect(() => {
-    const fetchFilters = async () => {
-      setFiltersLoading(true);
+    const fetchPurchases = async () => {
+      if (!user) return;
       try {
-        const [cats, deps] = await Promise.all([
-          getCategories(),
-          getDepartments()
-        ]);
-        setCategories(cats);
-        setDepartments(deps);
+        const data = await getPurchasesByUser(user._id || user.id);
+        setPurchases(data);
       } catch (err) {
-        setCategories([]);
-        setDepartments([]);
-      } finally {
-        setFiltersLoading(false);
+        setPurchases([]);
       }
     };
-    fetchFilters();
-  }, []);
+    fetchPurchases();
+    // Listen for purchaseMade event
+    const handlePurchaseMade = () => fetchPurchases();
+    window.addEventListener('purchaseMade', handlePurchaseMade);
+    return () => window.removeEventListener('purchaseMade', handlePurchaseMade);
+  }, [user]);
 
   return (
     <div className="flex flex-col md:flex-row gap-6 mt-6">
@@ -90,43 +111,86 @@ const Dashboard = () => {
       </aside>
       {/* Main Content */}
       <main className="flex-1">
-        {/* Top search bar */}
-        <div className="flex flex-col md:flex-row md:items-center gap-2 mb-6">
-          <input
-            type="text"
-            placeholder="Search for books, calculators, laptops..."
-            className="border p-2 rounded flex-1"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        {/* Tabs */}
+        <div className="mb-4 flex gap-6 border-b">
           <button
-            onClick={fetchListings}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className={`pb-2 px-2 border-b-2 ${activeTab === 'listings' ? 'border-indigo-600 text-indigo-600 font-semibold' : 'border-transparent text-gray-500'}`}
+            onClick={() => setActiveTab('listings')}
           >
-            Search
+            Your Listings
+          </button>
+          <button
+            className={`pb-2 px-2 border-b-2 ${activeTab === 'purchases' ? 'border-indigo-600 text-indigo-600 font-semibold' : 'border-transparent text-gray-500'}`}
+            onClick={() => setActiveTab('purchases')}
+          >
+            Your Purchases
           </button>
         </div>
-        {loading ? (
-          <div>Loading...</div>
-        ) : listings.length === 0 ? (
-          <div>No listings found.</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map(listing => (
-              <ListingCard
-                key={listing._id || listing.id}
-                id={listing._id || listing.id}
-                title={listing.title}
-                price={listing.price}
-                image={listing.image}
-                category={listing.category}
-                condition={listing.condition || 'Good'}
-                sellerName={listing.seller?.name || 'N/A'}
-                sellerRating={listing.seller?.rating || 0}
-                date={listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : ''}
-              />
-            ))}
+        {/* Top search bar (only for listings tab) */}
+        {activeTab === 'listings' && (
+          <div className="flex flex-col md:flex-row md:items-center gap-2 mb-6">
+            <input
+              type="text"
+              placeholder="Search for books, calculators, laptops..."
+              className="border p-2 rounded flex-1"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <button
+              onClick={fetchListings}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Search
+            </button>
           </div>
+        )}
+        {/* Listings Tab */}
+        {activeTab === 'listings' && (
+          loading ? (
+            <div>Loading...</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {listings
+                .filter(listing => listing.seller === user?._id || listing.seller === user?.id || listing.seller?._id === user?._id || listing.seller?.id === user?.id)
+                .map(listing => (
+                  <ListingCard
+                    key={listing._id || listing.id}
+                    id={listing._id || listing.id}
+                    title={listing.title}
+                    price={listing.price}
+                    image={listing.image}
+                    category={listing.category}
+                    condition={listing.condition || 'Good'}
+                    sellerName={listing.seller?.name || 'You'}
+                    sellerRating={listing.seller?.rating || 0}
+                    date={listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : ''}
+                  />
+                ))}
+            </div>
+          )
+        )}
+        {/* Purchases Tab */}
+        {activeTab === 'purchases' && (
+          purchases.length === 0 ? (
+            <div>No purchases found.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {purchases.map(listing => (
+                <ListingCard
+                  key={listing._id || listing.id}
+                  id={listing._id || listing.id}
+                  title={listing.title}
+                  price={listing.price}
+                  image={listing.image}
+                  category={listing.category}
+                  condition={listing.condition || 'Good'}
+                  sellerName={listing.seller?.name || 'N/A'}
+                  sellerRating={listing.seller?.rating || 0}
+                  date={listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : ''}
+                />
+              ))}
+            </div>
+          )
         )}
       </main>
     </div>

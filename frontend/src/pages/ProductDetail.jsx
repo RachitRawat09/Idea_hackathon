@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getListingById } from '../api/listings.jsx';
+import { getListingById, purchaseListing } from '../api/listings.jsx';
 import { FaStar } from 'react-icons/fa';
+import { AuthContext } from '../context/AuthContext.jsx';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user, token } = React.useContext(AuthContext);
+  const [purchasing, setPurchasing] = useState(false);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -24,6 +29,25 @@ const ProductDetail = () => {
     };
     fetchListing();
   }, [id]);
+
+  const handlePurchase = async () => {
+    if (!user || !token) {
+      toast.error('You must be logged in to purchase.');
+      return;
+    }
+    setPurchasing(true);
+    try {
+      await purchaseListing(id, user.id, token);
+      toast.success('Purchase successful!');
+      setListing({ ...listing, buyer: user.id });
+      // Optionally, trigger a custom event or callback to refresh purchases in Dashboard
+      window.dispatchEvent(new Event('purchaseMade'));
+    } catch (err) {
+      toast.error('Failed to purchase item.');
+    } finally {
+      setPurchasing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -86,6 +110,16 @@ const ProductDetail = () => {
             <h3 className="font-semibold mb-1">Description</h3>
             <p className="text-gray-700">{listing.description || 'No description provided.'}</p>
           </div>
+          {/* Purchase Button */}
+          {(!listing.buyer && user && listing.seller?.id !== user.id && listing.seller !== user.id) && (
+            <button
+              onClick={handlePurchase}
+              className="bg-green-600 text-white px-4 py-2 rounded mt-4 w-max"
+              disabled={purchasing}
+            >
+              {purchasing ? 'Purchasing...' : 'Purchase'}
+            </button>
+          )}
         </div>
       </div>
     </div>

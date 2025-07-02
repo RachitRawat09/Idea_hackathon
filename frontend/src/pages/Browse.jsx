@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaSearch, FaFilter, FaTimes } from 'react-icons/fa';
 import ListingCard from '../components/ListingCard.jsx';
-import { getListings, getCategories } from '../api/listings.jsx';
+import { getListings } from '../api/listings.jsx';
 
 // Mock conditions for demonstration
 const conditions = [
@@ -12,6 +12,16 @@ const conditions = [
   'Acceptable',
 ];
 
+const hardcodedCategories = [
+  'Textbooks',
+  'Electronics',
+  'Calculators',
+  'Lab Equipment',
+  'Notes & Study Guides',
+  'Office Supplies',
+  'Other',
+];
+
 const Browse = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -20,24 +30,8 @@ const Browse = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState([]);
-  const [filtersLoading, setFiltersLoading] = useState(true);
-
-  // Fetch categories from backend
-  useEffect(() => {
-    const fetchCategories = async () => {
-      setFiltersLoading(true);
-      try {
-        const cats = await getCategories();
-        setCategories(cats);
-      } catch (err) {
-        setCategories([]);
-      } finally {
-        setFiltersLoading(false);
-      }
-    };
-    fetchCategories();
-  }, []);
+  const [categories] = useState(hardcodedCategories);
+  const [filtersLoading] = useState(false);
 
   // Fetch real listings from backend
   useEffect(() => {
@@ -60,8 +54,10 @@ const Browse = () => {
     // eslint-disable-next-line
   }, [searchTerm, selectedCategory]);
 
-  // Frontend filtering for condition and price
+  // Frontend filtering for condition and price, and remove purchased items
   const filteredListings = listings.filter((listing) => {
+    // Exclude purchased/sold items
+    if (listing.buyer) return false;
     // Condition
     if (
       selectedCondition !== 'Any Condition' &&

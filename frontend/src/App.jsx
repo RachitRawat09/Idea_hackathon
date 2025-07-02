@@ -12,10 +12,13 @@ import ProductDetail from './pages/ProductDetail.jsx';
 import Profile from './pages/Profile.jsx';
 import CreateListing from './pages/CreateListing.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   return (
     <BrowserRouter>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Landing />} />
