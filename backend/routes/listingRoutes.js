@@ -26,8 +26,9 @@ router.delete('/:id', listingController.deleteListing); // For now, no auth
 // Image upload endpoint
 router.post('/upload-image', upload.single('image'), async (req, res) => {
   try {
+    console.log('FILE RECEIVED:', req.file); // 🔍 Check if file is received
+
     const result = await uploadToCloudinary(req.file.path, 'listings');
-    // Remove file from local uploads after upload
     fs.unlinkSync(req.file.path);
     res.json({ imageUrl: result.secure_url });
   } catch (err) {
@@ -35,5 +36,15 @@ router.post('/upload-image', upload.single('image'), async (req, res) => {
     res.status(500).json({ message: 'Image upload failed' });
   }
 });
+router.post('/upload-test', upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file received' });
+  }
+  res.json({
+    message: 'File received successfully!',
+    file: req.file
+  });
+});
+
 
 module.exports = router; 
