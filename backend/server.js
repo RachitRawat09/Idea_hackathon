@@ -10,8 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 // Import routes (to be added)
-// const userRoutes = require('./routes/userRoutes');
-// app.use('/api/users', userRoutes);
+const userRoutes = require('./routes/userRoutes');
+app.use('/api/users', userRoutes);
 
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
