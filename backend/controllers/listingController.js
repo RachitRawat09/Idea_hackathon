@@ -1,19 +1,50 @@
 const Listing = require('../models/Listing');
+const User = require('../models/User');
+const Plan = require('../models/Plan');
 
 // Create a new listing
 exports.createListing = async (req, res) => {
   try {
-    const { title, description, category, price, image, department } = req.body;
+    const { title, description, category, price, image, department, seller } = req.body;
+    // Fetch seller
+    const user = await User.findById(seller);
+    if (!user) return res.status(404).json({ message: 'Seller not found' });
+
+    // Get plan info
+    let planInfo = { listingLimit: 3 }; // Default for free
+    if (user.plan && user.plan !== 'free') {
+      const plan = await Plan.findOne({ name: user.plan });
+      if (plan) planInfo = plan;
+    }
+
+    // Check if plan expired (for paid plans)
+    if (user.plan !== 'free' && user.planExpiresAt && user.planExpiresAt < new Date()) {
+      user.plan = 'free';
+      user.listingsThisPeriod = 0;
+      user.planExpiresAt = null;
+      await user.save();
+      planInfo = { listingLimit: 3 };
+    }
+
+    // Check quota
+    if (user.listingsThisPeriod >= planInfo.listingLimit) {
+      return res.status(403).json({ message: 'Listing limit reached. Please upgrade your plan to list more items.' });
+    }
+
+    // Create listing
     const listing = new Listing({
       title,
       description,
       category,
       price,
       image: image || '',
-      seller: req.body.seller,
+      seller: user._id,
       department,
     });
     await listing.save();
+    // Increment user's listingsThisPeriod
+    user.listingsThisPeriod += 1;
+    await user.save();
     res.status(201).json(listing);
   } catch (err) {
     console.log(err);
@@ -143,6 +174,67 @@ exports.getReviews = async (req, res) => {
     const listing = await Listing.findById(req.params.id).populate('reviews.reviewer', 'name email');
     if (!listing) return res.status(404).json({ message: 'Listing not found' });
     res.json(listing.reviews);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get current user's plan/quota info
+exports.getUserPlanInfo = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ message: 'User ID required' });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    let planInfo = { name: 'free', listingLimit: 3, price: 0, durationDays: null };
+    if (user.plan && user.plan !== 'free') {
+      const plan = await Plan.findOne({ name: user.plan });
+      if (plan) planInfo = plan;
+    }
+    // Check if plan expired
+    let expired = false;
+    if (user.plan !== 'free' && user.planExpiresAt && user.planExpiresAt < new Date()) {
+      expired = true;
+    }
+    res.json({
+      plan: user.plan,
+      listingsThisPeriod: user.listingsThisPeriod,
+      planExpiresAt: user.planExpiresAt,
+      planInfo,
+      expired
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get all available plans
+exports.getPlans = async (req, res) => {
+  try {
+    const plans = await Plan.find();
+    res.json(plans);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Subscribe user to a plan (no payment integration)
+exports.subscribePlan = async (req, res) => {
+  try {
+    const { userId, planName } = req.body;
+    if (!userId || !planName) return res.status(400).json({ message: 'User ID and plan name required' });
+    const user = await User.findById(userId);
+    const plan = await Plan.findOne({ name: planName });
+    if (!user || !plan) return res.status(404).json({ message: 'User or plan not found' });
+    user.plan = plan.name;
+    user.listingsThisPeriod = 0;
+    if (plan.durationDays) {
+      user.planExpiresAt = new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000);
+    } else {
+      user.planExpiresAt = null;
+    }
+    await user.save();
+    res.json({ message: 'Plan subscribed successfully', plan: user.plan, planExpiresAt: user.planExpiresAt });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
