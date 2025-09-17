@@ -37,6 +37,11 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  plan: {
+    type: String,
+    enum: ['free', 'paid'],
+    default: 'free',
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema); 
