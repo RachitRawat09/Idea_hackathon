@@ -11,6 +11,7 @@ import ProductDetail from './pages/ProductDetail.jsx';
 import Profile from './pages/Profile.jsx';
 import CreateListing from './pages/CreateListing.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -39,6 +40,7 @@ const App = () => {
           {/* Auth pages */}
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
+          <Route path="reset-password" element={<ResetPassword />} />
 
           {/* User dashboard & features */}
           <Route path="dashboard" element={<Dashboard />} />

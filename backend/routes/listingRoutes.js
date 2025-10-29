@@ -24,6 +24,9 @@ router.put('/:id', listingController.updateListing); // For now, no auth
 // router.delete('/:id', authMiddleware, listingController.deleteListing);
 router.delete('/:id', listingController.deleteListing); // For now, no auth
 
+// Mark listing as sold (protected)
+router.put('/:id/sold', authMiddleware, listingController.markAsSold);
+
 // Image upload endpoint
 router.post('/upload-image', upload.single('image'), async (req, res) => {
   try {

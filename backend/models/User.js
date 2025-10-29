@@ -25,6 +25,14 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  otp: {
+    type: String,
+    default: null,
+  },
+  otpExpiresAt: {
+    type: Date,
+    default: null,
+  },
   isAdmin: {
     type: Boolean,
     default: false,
@@ -37,14 +45,7 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-<<<<<<< HEAD
-  plan: {
-    type: String,
-    enum: ['free', 'paid'],
-    default: 'free',
-  },
-=======
-  // Subscription/plan fields
+ 
   plan: {
     type: String,
     enum: ['free', 'premium'],
@@ -57,7 +58,15 @@ const UserSchema = new mongoose.Schema({
   planExpiresAt: {
     type: Date,
   },
->>>>>>> 8988633f61644774413f34ef95eed483c1044a98
+  resetPasswordToken: {
+    type: String,
+    default: null,
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: null,
+  },
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema); 

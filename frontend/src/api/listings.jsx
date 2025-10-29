@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/listings';
+const API_URL = 'http://localhost:8080/api/listings';
 
 export const getListings = async (params = {}) => {
   const res = await axios.get(API_URL, { params });
@@ -62,5 +62,12 @@ export const getPlans = async () => {
 
 export const subscribePlan = async (userId, planName) => {
   const res = await axios.post(`${API_URL}/subscribe-plan`, { userId, planName });
+  return res.data;
+};
+
+export const markAsSold = async (listingId, buyerId, token) => {
+  const res = await axios.put(`${API_URL}/${listingId}/sold`, { buyerId }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
   return res.data;
 }; 

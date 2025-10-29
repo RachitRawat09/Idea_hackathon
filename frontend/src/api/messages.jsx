@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/messages';
+const API_URL = 'http://localhost:8080/api/messages';
 
 export const sendMessage = async (data, token) => {
   const res = await axios.post(API_URL, data, {
@@ -20,7 +20,29 @@ export const getMessages = async (userId, listingId, token) => {
 };
 
 export const getAllUsers = async (token) => {
-  const res = await axios.get('http://localhost:5000/api/users/all', {
+  const res = await axios.get('http://localhost:8080/api/users/all', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+// New conversation APIs
+export const initiateConversation = async (data, token) => {
+  const res = await axios.post(`${API_URL}/initiate`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+export const acceptConversation = async (conversationId, token) => {
+  const res = await axios.post(`${API_URL}/conversations/${conversationId}/accept`, {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+export const getConversations = async (token) => {
+  const res = await axios.get(`${API_URL}/conversations`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;

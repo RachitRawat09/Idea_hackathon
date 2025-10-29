@@ -57,7 +57,7 @@ const Browse = () => {
   // Frontend filtering for condition and price, and remove purchased items
   const filteredListings = listings.filter((listing) => {
     // Exclude purchased/sold items
-    if (listing.buyer) return false;
+    if (listing.buyer || listing.isSold) return false;
     // Condition
     if (
       selectedCondition !== 'Any Condition' &&
@@ -84,7 +84,18 @@ const Browse = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Browse Items</h1>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Browse Marketplace</h1>
+        <p className="text-lg text-gray-600">Discover items from students across campus</p>
+        <div className="mt-4 flex items-center text-sm text-gray-500">
+          <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full mr-2">
+            {filteredListings.length} Available Items
+          </span>
+          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            {listings.length} Total Listings
+          </span>
+        </div>
+      </div>
       {/* Search and Filters */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row gap-4 mb-4">

@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaUser, FaUniversity, FaUpload } from 'react-icons/fa';
 import { AuthContext } from '../context/AuthContext.jsx';
-import { register as registerApi } from '../api/auth.jsx';
+import { register as registerApi, verifyOTP, resendOTP } from '../api/auth.jsx';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -16,6 +16,10 @@ const Register = () => {
     studentIdFile: null,
   });
   const [error, setError] = useState('');
+  const [otp, setOtp] = useState('');
+  const [showOTPForm, setShowOTPForm] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [loading, setLoading] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -39,42 +43,106 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
+    
     if (!formData.name || !formData.email || !formData.college || !formData.password) {
       setError('Please fill in all required fields');
       toast.error('Please fill in all required fields');
+      setLoading(false);
       return;
     }
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       toast.error('Passwords do not match');
+      setLoading(false);
       return;
     }
-    if (!formData.email.endsWith('.edu')) {
-      setError('Please use a valid college email address (.edu)');
-      toast.error('Please use a valid college email address (.edu)');
+    // Validate college email - support various college domains
+    const collegeEmailDomains = [
+      '.edu', '.edu.in', '.ac.in', '.ac.uk', '.edu.au', '.edu.ca', 
+      '.edu.sg', '.edu.my', '.edu.ph', '.edu.nz', '.edu.za',
+      '.university', '.college', '.institute', '.ac.za', '.edu.pk',
+      '.edu.bd', '.edu.lk', '.edu.np', '.edu.bt', '.edu.mv'
+    ];
+    
+    const isValidCollegeEmail = collegeEmailDomains.some(domain => 
+      formData.email.toLowerCase().endsWith(domain.toLowerCase())
+    );
+    
+    if (!isValidCollegeEmail) {
+      setError('Please use a valid college/university email address (.edu, .ac.in, .edu.in, etc.)');
+      toast.error('Please use a valid college/university email address (.edu, .ac.in, .edu.in, etc.)');
+      setLoading(false);
       return;
     }
+    
     // Prepare form data for API
     const apiData = {
       name: formData.name,
       email: formData.email,
       college: formData.college,
       password: formData.password,
-      // studentIdImage: (handle file upload separately if needed)
     };
+    
     try {
-      const res = await registerApi(apiData); // If you want to handle file upload, use FormData and a different endpoint
-      if (res.token) {
-        login(res.user, res.token);
-        toast.success('Registration successful!');
-        navigate('/dashboard');
+      const res = await registerApi(apiData);
+      if (res.userId) {
+        setUserId(res.userId);
+        setShowOTPForm(true);
+        toast.success('Registration successful! Please check your email for verification OTP.');
+        
+        // If OTP is included in response (for testing), show it
+        if (res.otp) {
+          console.log('OTP for testing:', res.otp);
+          toast.info(`OTP for testing: ${res.otp}`);
+        }
       } else {
         setError(res.message || 'Registration failed');
         toast.error(res.message || 'Registration failed');
       }
     } catch (err) {
-      setError('Registration failed');
-      toast.error('Registration failed');
+      setError(err.response?.data?.message || 'Registration failed');
+      toast.error(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOTPSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    
+    if (!otp) {
+      setError('Please enter the OTP');
+      toast.error('Please enter the OTP');
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      const res = await verifyOTP(userId, otp);
+      if (res.message) {
+        toast.success('Email verified successfully! You can now login.');
+        navigate('/login');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'OTP verification failed');
+      toast.error(err.response?.data?.message || 'OTP verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setLoading(true);
+    try {
+      const res = await resendOTP(userId);
+      toast.success('OTP sent successfully!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to resend OTP');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,7 +169,9 @@ const Register = () => {
               {error}
             </div>
           )}
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          
+          {!showOTPForm ? (
+            <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label
                 htmlFor="name"
@@ -145,7 +215,7 @@ const Register = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-                  placeholder="you@college.edu"
+                  placeholder="you@college.ac.in"
                 />
               </div>
             </div>
@@ -253,12 +323,61 @@ const Register = () => {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={loading}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                Create Account
+                {loading ? 'Creating Account...' : 'Create Account'}
               </button>
             </div>
-          </form>
+            </form>
+          ) : (
+            <div className="space-y-6">
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Email Verification</h3>
+                <p className="text-sm text-gray-600">
+                  We've sent a 6-digit verification code to <strong>{formData.email}</strong>
+                </p>
+              </div>
+              
+              <form onSubmit={handleOTPSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
+                    Verification Code
+                  </label>
+                  <input
+                    id="otp"
+                    name="otp"
+                    type="text"
+                    maxLength="6"
+                    required
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-center text-lg tracking-widest"
+                    placeholder="000000"
+                  />
+                </div>
+                
+                <div className="flex space-x-3">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                  >
+                    {loading ? 'Verifying...' : 'Verify Email'}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={handleResendOTP}
+                    disabled={loading}
+                    className="flex-1 flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                  >
+                    {loading ? 'Sending...' : 'Resend OTP'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -215,7 +215,27 @@ const CreateListing = ({ onCreated }) => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Create New Listing</h1>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Sell Your Items</h1>
+        <p className="text-lg text-gray-600">List your items for sale to other students</p>
+        {planInfo && (
+          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-blue-800">
+                  Plan: {planInfo.planInfo?.name || 'free'} | 
+                  Listings Used: {planInfo.listingsThisPeriod || 0} / {planInfo.planInfo?.listingLimit || 3}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="bg-white rounded-lg shadow p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

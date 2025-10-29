@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { getListingById, purchaseListing } from '../api/listings.jsx';
-import { FaStar } from 'react-icons/fa';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getListingById } from '../api/listings.jsx';
+import { initiateConversation } from '../api/messages.jsx';
+import { FaStar, FaComments } from 'react-icons/fa';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user, token } = React.useContext(AuthContext);
-  const [purchasing, setPurchasing] = useState(false);
+  const [messaging, setMessaging] = useState(false);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -30,22 +32,29 @@ const ProductDetail = () => {
     fetchListing();
   }, [id]);
 
-  const handlePurchase = async () => {
+  const handleMessage = async () => {
     if (!user || !token) {
-      toast.error('You must be logged in to purchase.');
+      toast.error('You must be logged in to message.');
       return;
     }
-    setPurchasing(true);
+    
+    if (!listing.seller) {
+      toast.error('Seller information not available.');
+      return;
+    }
+
+    setMessaging(true);
     try {
-      await purchaseListing(id, user.id, token);
-      toast.success('Purchase successful!');
-      setListing({ ...listing, buyer: user.id });
-      // Optionally, trigger a custom event or callback to refresh purchases in Dashboard
-      window.dispatchEvent(new Event('purchaseMade'));
+      await initiateConversation({
+        receiver: listing.seller._id || listing.seller.id,
+        listing: listing._id
+      }, token);
+      toast.success('Request sent! Waiting for seller to accept. Redirecting...');
+      setTimeout(() => navigate('/messages'), 800);
     } catch (err) {
-      toast.error('Failed to purchase item.');
+      toast.error('Failed to send request.');
     } finally {
-      setPurchasing(false);
+      setMessaging(false);
     }
   };
 
@@ -110,15 +119,38 @@ const ProductDetail = () => {
             <h3 className="font-semibold mb-1">Description</h3>
             <p className="text-gray-700">{listing.description || 'No description provided.'}</p>
           </div>
-          {/* Purchase Button */}
-          {(!listing.buyer && user && listing.seller?.id !== user.id && listing.seller !== user.id) && (
+          {/* Message Button */}
+          {(!listing.isSold && user && listing.seller?.id !== user.id && listing.seller?._id !== user.id) && (
             <button
-              onClick={handlePurchase}
-              className="bg-green-600 text-white px-4 py-2 rounded mt-4 w-max"
-              disabled={purchasing}
+              onClick={handleMessage}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg mt-4 w-max flex items-center gap-2 hover:bg-blue-700 transition-colors"
+              disabled={messaging}
             >
-              {purchasing ? 'Purchasing...' : 'Purchase'}
+              <FaComments />
+              {messaging ? 'Sending...' : 'Message Seller'}
             </button>
+          )}
+          
+          {/* Sold Status */}
+          {listing.isSold && (
+            <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg mt-4">
+              <strong>This item has been sold</strong>
+            </div>
+          )}
+          
+          {/* Owner Notice */}
+          {user && (listing.seller?.id === user.id || listing.seller?._id === user.id) && (
+            <div className="bg-blue-100 border border-blue-300 text-blue-700 px-4 py-3 rounded-lg mt-4">
+              <strong>This is your listing</strong>
+              {!listing.isSold && (
+                <button
+                  onClick={() => navigate(`/messages`)}
+                  className="block mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  View Messages
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

@@ -37,20 +37,30 @@ const Dashboard = () => {
   const [purchases, setPurchases] = useState([]);
 
   const fetchListings = async () => {
+    if (!user) return;
     setLoading(true);
-    const params = {};
-    if (search) params.search = search;
-    if (category) params.category = category;
-    if (department) params.department = department;
-    const data = await getListings(params);
-    setListings(data);
-    setLoading(false);
+    try {
+      const params = {};
+      if (search) params.search = search;
+      if (category) params.category = category;
+      if (department) params.department = department;
+      if (user?.id || user?._id) params.seller = user.id || user._id;
+      const data = await getListings(params);
+      setListings(data);
+    } catch (err) {
+      console.error('Error fetching listings:', err);
+      setListings([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchListings();
+    if (user) {
+      fetchListings();
+    }
     // eslint-disable-next-line
-  }, [search, category, department]);
+  }, [search, category, department, user]);
 
   useEffect(() => {
     const fetchPurchases = async () => {
@@ -69,10 +79,77 @@ const Dashboard = () => {
     return () => window.removeEventListener('purchaseMade', handlePurchaseMade);
   }, [user]);
 
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col md:flex-row gap-6 mt-6">
-      {/* Sidebar */}
-      <aside className="md:w-64 w-full bg-white rounded-xl shadow p-4 mb-4 md:mb-0">
+    <div className="container mx-auto px-4 py-8">
+      {/* Dashboard Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">My Dashboard</h1>
+        <p className="text-lg text-gray-600">Manage your listings and track your purchases</p>
+        
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">My Listings</p>
+                <p className="text-2xl font-bold text-gray-900">{listings.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Purchases</p>
+                <p className="text-2xl font-bold text-gray-900">{purchases.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Spent</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${purchases.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Sidebar */}
+        <aside className="md:w-64 w-full bg-white rounded-xl shadow p-4 mb-4 md:mb-0">
         <h3 className="font-bold text-lg mb-4 text-blue-700">Filters</h3>
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Category</label>
@@ -150,9 +227,7 @@ const Dashboard = () => {
             <div>Loading...</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {listings
-                .filter(listing => listing.seller === user?._id || listing.seller === user?.id || listing.seller?._id === user?._id || listing.seller?.id === user?.id)
-                .map(listing => (
+              {listings.map(listing => (
                   <ListingCard
                     key={listing._id || listing.id}
                     id={listing._id || listing.id}
@@ -193,6 +268,7 @@ const Dashboard = () => {
           )
         )}
       </main>
+      </div>
     </div>
   );
 };

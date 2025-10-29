@@ -238,4 +238,25 @@ exports.subscribePlan = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
+};
+
+// Mark listing as sold
+exports.markAsSold = async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return res.status(404).json({ message: 'Listing not found' });
+
+    // Check if user is the seller
+    if (listing.seller.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the seller can mark item as sold' });
+    }
+
+    listing.isSold = true;
+    listing.buyer = req.body.buyerId || null; // Optional: specify buyer
+    await listing.save();
+
+    res.json({ message: 'Item marked as sold', listing });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
 }; 
