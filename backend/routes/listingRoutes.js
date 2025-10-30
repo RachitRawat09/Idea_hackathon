@@ -62,12 +62,6 @@ router.get('/purchases', listingController.getPurchasesByUser);
 router.post('/:id/reviews', authMiddleware, listingController.addReview);
 router.get('/:id/reviews', listingController.getReviews);
 
-// Get user plan/quota info
-router.get('/user-plan-info', listingController.getUserPlanInfo);
-
-// Get all plans
-router.get('/plans', listingController.getPlans);
-// Subscribe to a plan
-router.post('/subscribe-plan', listingController.subscribePlan);
+// Plans disabled: routes removed
 
 module.exports = router; 

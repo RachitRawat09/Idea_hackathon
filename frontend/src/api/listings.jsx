@@ -50,20 +50,7 @@ export const purchaseListing = async (id, buyerId, token) => {
   return res.data;
 };
 
-export const getUserPlanInfo = async (userId) => {
-  const res = await axios.get(`${API_URL}/user-plan-info`, { params: { userId } });
-  return res.data;
-};
-
-export const getPlans = async () => {
-  const res = await axios.get(`${API_URL}/plans`);
-  return res.data;
-};
-
-export const subscribePlan = async (userId, planName) => {
-  const res = await axios.post(`${API_URL}/subscribe-plan`, { userId, planName });
-  return res.data;
-};
+// Plans disabled – no client APIs
 
 export const markAsSold = async (listingId, buyerId, token) => {
   const res = await axios.put(`${API_URL}/${listingId}/sold`, { buyerId }, {
