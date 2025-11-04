@@ -10,4 +10,8 @@ const uploadToCloudinary = async (filePath, folder = 'campusconnect') => {
   return await cloudinary.uploader.upload(filePath, { folder });
 };
 
-module.exports = { cloudinary, uploadToCloudinary }; 
+const deleteFromCloudinary = async (publicId) => {
+  return await cloudinary.uploader.destroy(publicId);
+};
+
+module.exports = { cloudinary, uploadToCloudinary, deleteFromCloudinary }; 

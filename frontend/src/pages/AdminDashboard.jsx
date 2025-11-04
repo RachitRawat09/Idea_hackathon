@@ -1,53 +1,48 @@
-import React, { useEffect, useState } from 'react';
-import { getListings } from '../api/listings.jsx';
-import ListingCard from '../components/ListingCard.jsx';
+import React, { useEffect, useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext.jsx';
+import { getAdminStats } from '../api/admin.jsx';
 
 const AdminDashboard = () => {
-  const [listings, setListings] = useState([]);
+  const { token } = useContext(AuthContext);
+  const [stats, setStats] = useState({ totalUsers: 0, totalListings: 0, reportedItems: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchListings = async () => {
+    const fetchStats = async () => {
       setLoading(true);
       try {
-        const data = await getListings();
-        setListings(data);
+        const data = await getAdminStats(token);
+        setStats(data);
       } catch (err) {
-        setListings([]);
+        setStats({ totalUsers: 0, totalListings: 0, reportedItems: 0 });
       } finally {
         setLoading(false);
       }
     };
-    fetchListings();
-  }, []);
+    if (token) fetchStats();
+  }, [token]);
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <p className="text-gray-500 mb-4">All Listings</p>
-        {loading ? (
-          <div>Loading...</div>
-        ) : listings.length === 0 ? (
-          <div>No listings found.</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map(listing => (
-              <ListingCard
-                key={listing._id || listing.id}
-                id={listing._id || listing.id}
-                title={listing.title}
-                price={listing.price}
-                image={listing.image}
-                category={listing.category}
-                condition={listing.condition || 'Good'}
-                sellerName={listing.seller?.name || 'N/A'}
-                sellerRating={listing.seller?.rating || 0}
-                date={listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : ''}
-              />
-            ))}
-          </div>
-        )}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow p-6">
+          <p className="text-sm text-gray-500">Total Users</p>
+          <p className="text-3xl font-bold">{loading ? '...' : stats.totalUsers}</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <p className="text-sm text-gray-500">Total Listings</p>
+          <p className="text-3xl font-bold">{loading ? '...' : stats.totalListings}</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <p className="text-sm text-gray-500">Reported Items</p>
+          <p className="text-3xl font-bold">{loading ? '...' : stats.reportedItems}</p>
+        </div>
+      </div>
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a href="/admin/users" className="bg-white rounded-lg shadow p-6 hover:bg-gray-50">Manage Users →</a>
+        <a href="/admin/items" className="bg-white rounded-lg shadow p-6 hover:bg-gray-50">Manage Items →</a>
+        <a href="/admin/complaints" className="bg-white rounded-lg shadow p-6 hover:bg-gray-50">Complaints →</a>
       </div>
     </div>
   );

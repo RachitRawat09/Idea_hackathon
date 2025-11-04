@@ -11,6 +11,11 @@ import ProductDetail from './pages/ProductDetail.jsx';
 import Profile from './pages/Profile.jsx';
 import CreateListing from './pages/CreateListing.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import AdminRoute from './components/AdminRoute.jsx';
+import ManageUsers from './pages/admin/ManageUsers.jsx';
+import UserDetail from './pages/admin/UserDetail.jsx';
+import ManageItems from './pages/admin/ManageItems.jsx';
+import Complaints from './pages/admin/Complaints.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -51,7 +56,31 @@ const App = () => {
           <Route path="profile" element={<Profile />} />
 
           {/* Admin */}
-          <Route path="admin" element={<AdminDashboard />} />
+          <Route path="admin" element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          } />
+          <Route path="admin/users" element={
+            <AdminRoute>
+              <ManageUsers />
+            </AdminRoute>
+          } />
+          <Route path="admin/users/:id" element={
+            <AdminRoute>
+              <UserDetail />
+            </AdminRoute>
+          } />
+          <Route path="admin/items" element={
+            <AdminRoute>
+              <ManageItems />
+            </AdminRoute>
+          } />
+          <Route path="admin/complaints" element={
+            <AdminRoute>
+              <Complaints />
+            </AdminRoute>
+          } />
         </Route>
       </Routes>
     </BrowserRouter>

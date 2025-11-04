@@ -21,8 +21,7 @@ router.get('/:id', listingController.getListingById);
 router.put('/:id', listingController.updateListing); // For now, no auth
 
 // Delete listing (protected)
-// router.delete('/:id', authMiddleware, listingController.deleteListing);
-router.delete('/:id', listingController.deleteListing); // For now, no auth
+router.delete('/:id', authMiddleware, listingController.deleteListing);
 
 // Mark listing as sold (protected)
 router.put('/:id/sold', authMiddleware, listingController.markAsSold);
@@ -50,13 +49,32 @@ router.post('/upload-test', upload.single('image'), (req, res) => {
   });
 });
 
+// Multi image upload (max 4)
+router.post('/upload-images', upload.array('images', 4), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'No files received' });
+    }
+    const uploaded = [];
+    for (const file of req.files) {
+      const result = await uploadToCloudinary(file.path, 'listings');
+      fs.unlinkSync(file.path);
+      uploaded.push(result.secure_url);
+    }
+    res.json({ imageUrls: uploaded });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'Image upload failed' });
+  }
+});
+
 // Get all unique categories
 router.get('/categories', listingController.getCategories);
 // Get all unique departments
 router.get('/departments', listingController.getDepartments);
 
-// Get all purchases for a user
-router.get('/purchases', listingController.getPurchasesByUser);
+// Get all purchases for a user (protected)
+router.get('/purchases', authMiddleware, listingController.getPurchasesByUser);
 
 // Reviews
 router.post('/:id/reviews', authMiddleware, listingController.addReview);

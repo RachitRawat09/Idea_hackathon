@@ -31,7 +31,7 @@ const Login = () => {
       if (res.token) {
         login(res.user, res.token);
         toast.success('Login successful!');
-        navigate('/dashboard');
+        navigate(res.user?.isAdmin ? '/admin' : '/dashboard');
       } else {
         setError(res.message || 'Login failed');
         toast.error(res.message || 'Login failed');

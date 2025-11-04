@@ -18,7 +18,12 @@ const ListingSchema = new mongoose.Schema({
     required: true,
   },
   image: {
-    type: String, // URL to uploaded image
+    type: String, // legacy single image URL
+  },
+  images: {
+    type: [String], // up to 4 image URLs
+    default: [],
+    validate: [arr => arr.length <= 4, 'You can upload up to 4 images']
   },
   seller: {
     type: mongoose.Schema.Types.ObjectId,

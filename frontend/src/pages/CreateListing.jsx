@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { createListing, uploadImage } from '../api/listings.jsx';
+import { createListing, uploadImages } from '../api/listings.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 
 const categories = [
@@ -29,14 +29,17 @@ const CreateListing = ({ onCreated }) => {
     price: '',
     condition: '',
     department: '',
-    image: null,
+    images: [],
   });
+  const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (name === 'image') {
-      setForm((prev) => ({ ...prev, image: files[0] }));
+    if (name === 'images') {
+      const fileArray = Array.from(files).slice(0, 4);
+      setForm((prev) => ({ ...prev, images: fileArray }));
+      setPreviews(fileArray.map(f => URL.createObjectURL(f)));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
@@ -48,16 +51,17 @@ const CreateListing = ({ onCreated }) => {
       toast.error('Please fill all required fields.');
       return;
     }
+    if (!form.images || form.images.length === 0) {
+      toast.error('Please upload at least 1 image (max 4).');
+      return;
+    }
     if (!user || !(user._id || user.id)) {
       toast.error('User not found. Please log in again.');
       return;
     }
     setLoading(true);
     try {
-      let imageUrl = '';
-      if (form.image) {
-        imageUrl = await uploadImage(form.image);
-      }
+      const imageUrls = await uploadImages(form.images);
       const data = {
         title: form.title,
         description: form.description,
@@ -65,7 +69,7 @@ const CreateListing = ({ onCreated }) => {
         price: parseFloat(form.price),
         condition: form.condition,
         department: form.department,
-        image: imageUrl,
+        images: imageUrls,
         seller: user.id || user._id,
       };
       await createListing(data, token);
@@ -77,8 +81,9 @@ const CreateListing = ({ onCreated }) => {
         price: '',
         condition: '',
         department: '',
-        image: null,
+        images: [],
       });
+      setPreviews([]);
       if (onCreated) onCreated();
     } catch (err) {
       toast.error('Failed to create listing.');
@@ -130,8 +135,15 @@ const CreateListing = ({ onCreated }) => {
             <input type="number" name="price" value={form.price} onChange={handleChange} className="w-full border rounded px-3 py-2" min="0" step="0.01" required />
           </div>
           <div>
-            <label className="block font-medium mb-1">Image</label>
-            <input type="file" name="image" accept="image/*" onChange={handleChange} className="w-full" />
+            <label className="block font-medium mb-1">Images (1-4) *</label>
+            <input type="file" name="images" accept="image/*" multiple onChange={handleChange} className="w-full" />
+            {previews.length > 0 && (
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {previews.map((src, idx) => (
+                  <img key={idx} src={src} alt={`preview-${idx}`} className="w-full h-20 object-cover rounded" />
+                ))}
+              </div>
+            )}
           </div>
           <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded" disabled={loading}>
             {loading ? 'Creating...' : 'Create Listing'}

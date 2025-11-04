@@ -84,8 +84,18 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Please verify your email before logging in' });
     }
 
-    const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin } });
+    // Sign token with string id to keep token payload consistent
+    const token = jwt.sign({ id: user._id.toString(), isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    // Return a single canonical id field (use `id`) to avoid duplication
+    res.json({
+      token,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin
+      }
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }

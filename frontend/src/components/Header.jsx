@@ -29,7 +29,7 @@ const Header = () => {
               to="/browse"
               className="hover:text-indigo-200 transition-colors"
             >
-              Browse
+              Explore 
             </Link>
             {isLoggedIn ? (
               <>

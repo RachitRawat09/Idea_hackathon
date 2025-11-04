@@ -336,11 +336,11 @@ const Browse = () => {
               id={listing._id || listing.id}
               title={listing.title}
               price={listing.price}
-              image={listing.image}
+              image={listing.images?.[0] || listing.image}
               category={listing.category}
               condition={listing.condition || 'Good'}
               sellerName={listing.seller?.name || 'N/A'}
-              sellerRating={listing.seller?.rating || 0}
+              sellerRating={listing.seller?.averageRating || 0}
               date={listing.createdAt ? new Date(listing.createdAt).toLocaleDateString() : ''}
             />
           ))}

@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { FaStar } from 'react-icons/fa';
+import { FaStar, FaTrash } from 'react-icons/fa';
+import { AuthContext } from '../context/AuthContext';
+import { deleteListing } from '../api/listings';
+import { toast } from 'react-toastify';
 
 const ListingCard = ({
   id,
@@ -12,9 +15,32 @@ const ListingCard = ({
   sellerName,
   sellerRating = 0,
   date,
+  sellerId,
+  onDelete,
+  showDeleteButton = false
 }) => {
+  const { user, token } = useContext(AuthContext);
+  
+  const handleDelete = async (e) => {
+    e.preventDefault(); // Prevent navigation
+    e.stopPropagation(); // Prevent event bubbling
+    
+    if (window.confirm('Are you sure you want to delete this listing?')) {
+      try {
+        await deleteListing(id, token);
+        toast.success('Listing deleted successfully');
+        if (onDelete) onDelete(id);
+      } catch (err) {
+        toast.error('Failed to delete listing');
+        console.error('Error deleting listing:', err);
+      }
+    }
+  };
+
+  const isOwner = user && (user.id === sellerId || user._id === sellerId);
+
   return (
-    <Link to={`/product/${id}`} className="block">
+    <Link to={`/product/${id}`} className="block relative">
       <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
         <div className="h-48 overflow-hidden">
           <img src={image} alt={title} className="w-full h-full object-cover" />
@@ -52,6 +78,15 @@ const ListingCard = ({
             <span className="text-xs text-gray-500">{date}</span>
           </div>
         </div>
+        {showDeleteButton && isOwner && (
+          <button
+            onClick={handleDelete}
+            className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors"
+            title="Delete listing"
+          >
+            <FaTrash size={14} />
+          </button>
+        )}
       </div>
     </Link>
   );

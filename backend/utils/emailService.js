@@ -101,5 +101,41 @@ module.exports = {
     } catch (e) {
       // ignore email errors in dev
     }
+  },
+  // Send rejection email when item is sold to someone else
+  sendRequestRejectedEmail: async (userId, listingTitle, sellerName) => {
+    try {
+      const User = require('../models/User');
+      const user = await User.findById(userId);
+      if (!user || !user.email) return;
+      
+      const mailOptions = {
+        from: process.env.EMAIL_USER || 'your-email@gmail.com',
+        to: user.email,
+        subject: 'Request Rejected - Item Sold to Another Buyer',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #4F46E5;">Campus Connect</h2>
+            <h3 style="color: #DC2626;">Request Rejected</h3>
+            <p>Hi ${user.name || 'there'},</p>
+            <p>We're sorry to inform you that your request for <strong>"${listingTitle}"</strong> has been rejected.</p>
+            <p>The item has been sold to another buyer by <strong>${sellerName}</strong>.</p>
+            <p>Don't worry! You can continue browsing and find similar items on our marketplace.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" 
+                 style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Browse More Items
+              </a>
+            </div>
+            <hr style="margin: 20px 0;">
+            <p style="color: #6B7280; font-size: 12px;">Campus Connect - Student Marketplace</p>
+          </div>
+        `
+      };
+      await transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error('Error sending rejection email:', error);
+      // Don't throw - email is best-effort
+    }
   }
 };

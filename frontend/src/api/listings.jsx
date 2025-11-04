@@ -29,9 +29,31 @@ export const getDepartments = async () => {
   return res.data;
 };
 
-export const getPurchasesByUser = async (userId) => {
-  const res = await axios.get(`${API_URL}/purchases`, { params: { userId } });
-  return res.data;
+export const getPurchasesByUser = async (userId, token) => {
+  try {
+    console.log('Making purchase request with:', {
+      userId,
+      hasToken: !!token,
+      tokenStart: token ? token.substring(0, 10) + '...' : 'none'
+    });
+
+    const res = await axios.get(`${API_URL}/purchases`, {
+      params: { userId },
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return res.data;
+  } catch (error) {
+    console.error('Purchase request error details:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    throw error;
+  }
 };
 
 export const uploadImage = async (file) => {
@@ -41,6 +63,15 @@ export const uploadImage = async (file) => {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return res.data.imageUrl;
+};
+
+export const uploadImages = async (files) => {
+  const formData = new FormData();
+  files.forEach(f => formData.append('images', f));
+  const res = await axios.post(`${API_URL}/upload-images`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data.imageUrls;
 };
 
 export const purchaseListing = async (id, buyerId, token) => {
@@ -58,3 +89,10 @@ export const markAsSold = async (listingId, buyerId, token) => {
   });
   return res.data;
 }; 
+
+export const deleteListing = async (listingId, token) => {
+  const res = await axios.delete(`${API_URL}/${listingId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.data;
+};

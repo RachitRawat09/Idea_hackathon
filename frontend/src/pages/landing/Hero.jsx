@@ -31,7 +31,7 @@ const Hero = () => {
             to="/browse"
             className="px-6 py-3 bg-indigo-700 text-white rounded-md font-bold hover:scale-105 transition-transform duration-300"
           >
-            Browse Items
+            Explore
           </Link>
         </div>
       </div>

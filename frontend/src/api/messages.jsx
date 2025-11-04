@@ -46,4 +46,25 @@ export const getConversations = async (token) => {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
+};
+
+export const initiateSale = async (conversationId, token) => {
+  const res = await axios.post(`${API_URL}/initiate-sale`, { conversationId }, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+export const confirmSale = async (conversationId, token) => {
+  const res = await axios.post(`${API_URL}/confirm-sale`, { conversationId }, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
 }; 
+
+export const rateSellerForConversation = async (conversationId, rating, token) => {
+  const res = await axios.post(`${API_URL}/conversations/${conversationId}/rate`, { rating }, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};

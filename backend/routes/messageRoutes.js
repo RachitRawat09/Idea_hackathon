@@ -18,4 +18,13 @@ router.post('/', authMiddleware, messageController.sendMessage);
 // Get messages between two users (optionally filtered by listing)
 router.get('/', authMiddleware, messageController.getMessages);
 
+// Initiate sale (seller requests buyer confirmation)
+router.post('/initiate-sale', authMiddleware, messageController.initiateSale);
+
+// Confirm sale (buyer confirms the purchase)
+router.post('/confirm-sale', authMiddleware, messageController.confirmSale);
+
+// Rate seller after confirmed sale (buyer only)
+router.post('/conversations/:conversationId/rate', authMiddleware, messageController.rateConversationSeller);
+
 module.exports = router;

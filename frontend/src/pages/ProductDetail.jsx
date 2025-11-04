@@ -15,6 +15,7 @@ const ProductDetail = () => {
   const [error, setError] = useState(null);
   const { user, token } = React.useContext(AuthContext);
   const [messaging, setMessaging] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -78,17 +79,31 @@ const ProductDetail = () => {
 
   if (!listing) return null;
 
+  // Determine images for gallery
+  const images = (listing.images && listing.images.length > 0) ? listing.images : (listing.image ? [listing.image] : []);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Product Details</h1>
       <div className="bg-white rounded-lg shadow p-6 flex flex-col md:flex-row gap-8">
-        {/* Image */}
-        <div className="md:w-1/2 flex justify-center items-center">
-          <img
-            src={listing.image}
-            alt={listing.title}
-            className="w-full max-w-xs h-64 object-cover rounded-lg border"
-          />
+        {/* Image gallery */}
+        <div className="md:w-1/2 flex gap-4">
+          {/* Thumbnails */}
+          <div className="hidden md:flex flex-col gap-2">
+            {images.map((src, idx) => (
+              <button key={idx} onClick={() => setActiveIndex(idx)} className={`border rounded p-1 ${activeIndex===idx ? 'border-indigo-500' : 'border-gray-200'}`}>
+                <img src={src} alt={`thumb-${idx}`} className="w-16 h-16 object-cover rounded" />
+              </button>
+            ))}
+          </div>
+          {/* Main image */}
+          <div className="flex-1 flex justify-center items-center">
+            <img
+              src={images[activeIndex]}
+              alt={listing.title}
+              className="w-full max-w-md h-96 object-cover rounded-lg border"
+            />
+          </div>
         </div>
         {/* Details */}
         <div className="md:w-1/2 flex flex-col gap-4">
@@ -109,7 +124,7 @@ const ProductDetail = () => {
             <span>{listing.seller?.name || 'N/A'}</span>
             <FaStar size={16} className="text-yellow-500 ml-2" />
             <span className="text-gray-600 text-sm">
-              {listing.seller?.rating ? listing.seller.rating.toFixed(1) : 'N/A'}
+              {listing.seller?.averageRating ? listing.seller.averageRating.toFixed(1) : 'N/A'}
             </span>
           </div>
           <div className="text-gray-500 text-sm">

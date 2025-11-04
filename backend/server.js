@@ -22,6 +22,39 @@ app.use('/api/listings', listingRoutes);
 const messageRoutes = require('./routes/messageRoutes');
 app.use('/api/messages', messageRoutes);
 
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
+
+// Admin bootstrap: create admin user from env if not exists
+const bcrypt = require('bcryptjs');
+const User = require('./models/User');
+async function ensureAdmin() {
+  try {
+    const email = process.env.ADMIN_EMAIL;
+    const password = process.env.ADMIN_PASSWORD;
+    const name = process.env.ADMIN_NAME || 'Administrator';
+    const college = process.env.ADMIN_COLLEGE || 'Admin College';
+    if (!email || !password) {
+      console.warn('ADMIN_EMAIL or ADMIN_PASSWORD not set; skipping admin bootstrap');
+      return;
+    }
+    let user = await User.findOne({ email });
+    if (!user) {
+      const hashed = await bcrypt.hash(password, 10);
+      user = await User.create({ name, email, password: hashed, college, isAdmin: true, isVerified: true });
+      console.log('Admin user created:', email);
+    } else if (!user.isAdmin) {
+      user.isAdmin = true;
+      await user.save();
+      console.log('Existing user promoted to admin:', email);
+    } else {
+      console.log('Admin user already present:', email);
+    }
+  } catch (e) {
+    console.error('Failed to ensure admin user:', e.message);
+  }
+}
+
 // Error handling middleware (to be added)
 
 // MongoDB connection
@@ -39,6 +72,9 @@ const connectDB = async () => {
 };
 
 connectDB();
+
+// After DB connects, ensure admin exists
+ensureAdmin();
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
