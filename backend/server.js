@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
+
 const app = express();
 
 // Middleware
@@ -24,6 +25,8 @@ app.use('/api/messages', messageRoutes);
 
 const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
+
+
 
 // Admin bootstrap: create admin user from env if not exists
 const bcrypt = require('bcryptjs');

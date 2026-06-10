@@ -66,10 +66,10 @@ const Footer = () => {
         </div>
         <div className="mt-8 pt-6 border-t border-gray-700 text-center text-gray-400">
           <p>
-            &copy; {new Date().getFullYear()} Campus Connect - Team Decepticons.
+            &copy; {new Date().getFullYear()} Campus Connect 
             All rights reserved.
           </p>
-          <p className="mt-2">Developed for TIC Hackathon</p>
+          <p className="mt-2">Developed for Gndec.</p>
         </div>
       </div>
     </footer>

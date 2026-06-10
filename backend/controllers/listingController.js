@@ -154,155 +154,36 @@ exports.getDepartments = async (req, res) => {
 
 // Get all purchases for a user
 exports.getPurchasesByUser = async (req, res) => {
+  console.log("----- 🔍 DEBUGGING getPurchasesByUser -----");
+  console.log("Headers:", req.headers);
+  console.log("req.user value:", req.user);
+  console.log("Query params:", req.query);
+
   try {
-    console.log('\n=== Starting getPurchasesByUser ===');
-    console.log('1. Request details:', {
-      query: req.query,
-      method: req.method,
-      path: req.path,
-      headers: {
-        ...req.headers,
-        authorization: req.headers.authorization ? 'Bearer [hidden]' : undefined
-      }
-    });
+    const userId = req.query.userId || req.user?.id || req.user?._id;
+    console.log("✅ Final userId used in query:", userId);
 
-    console.log('2. Auth user:', {
-      user: req.user,
-      id: req.user?.id,
-      isAdmin: req.user?.isAdmin
-    });
-
-    const { userId } = req.query;
-    console.log('3. Requested userId:', userId);
-    
-    // Check if userId exists and is valid
     if (!userId) {
-      console.log('4. Error: No userId provided');
-      return res.status(400).json({ message: 'User ID required' });
+      console.log("❌ No userId found!");
+      return res.status(400).json({ message: "User ID required" });
     }
 
-    // Get the authenticated user's ID from the token
-    const authenticatedUserId = req.user?.id;
-    console.log('5. ID Comparison:', {
-      requestedUserId: userId,
-      authenticatedUserId,
-      isAdmin: req.user?.isAdmin,
-      doIdsMatch: userId === authenticatedUserId
-    });
+    const query = { buyer: userId, isSold: true };
+    console.log("🟩 Mongoose query:", query);
 
-    // Ensure authenticated user matches requested user ID or is admin
-    if (!authenticatedUserId) {
-      console.log('6. Error: No authenticated user ID');
-      return res.status(401).json({ message: 'Authentication required' });
-    }
+    const purchases = await Listing.find(query)
+      .populate("seller", "name email averageRating")
+      .populate("buyer", "name email")
+      .lean();
 
-    console.log('7. Converting userId to ObjectId');
-    let userObjectId;
-    try {
-      userObjectId = new mongoose.Types.ObjectId(userId);
-      console.log('8. Successfully created ObjectId:', userObjectId.toString());
-    } catch (err) {
-      console.log('8. Error: Failed to create ObjectId:', err.message);
-      return res.status(400).json({ message: 'Invalid user ID format' });
-    }
-
-    // Find listings where user is the buyer AND item is sold
-    const query = {
-      buyer: userObjectId,
-      isSold: true
-    };
-    
-    console.log('9. MongoDB Query:', JSON.stringify(query));
-    
-    // First try to find any matching documents
-    console.log('10. Counting matching documents...');
-    const count = await Listing.countDocuments(query);
-    console.log('11. Found', count, 'matching documents before population');
-
-    console.log('12. Fetching and populating documents...');
-    let purchases;
-    try {
-      purchases = await Listing.find(query)
-        .populate({
-          path: 'seller',
-          select: 'name email averageRating',
-          options: { lean: true }
-        })
-        .populate({
-          path: 'buyer',
-          select: 'name email',
-          options: { lean: true }
-        })
-        .sort({ updatedAt: -1 })
-        .lean();
-      
-      console.log('13. Successfully fetched purchases:', {
-        count: purchases.length,
-        firstItem: purchases[0] ? {
-          _id: purchases[0]._id,
-          title: purchases[0].title,
-          buyer: purchases[0].buyer?._id,
-          seller: purchases[0].seller?._id
-        } : null
-      });
-    } catch (dbError) {
-      console.error('13. Database Error:', dbError);
-      throw dbError;
-    }
-    
-    console.log('14. Transforming results...');
-    const transformedPurchases = purchases.map(purchase => {
-      try {
-        return {
-          ...purchase,
-          _id: purchase._id.toString(),
-          seller: purchase.seller ? {
-            ...purchase.seller,
-            _id: purchase.seller._id.toString()
-          } : null,
-          buyer: purchase.buyer ? {
-            ...purchase.buyer,
-            _id: purchase.buyer._id.toString()
-          } : null
-        };
-      } catch (transformError) {
-        console.error('Transform error for purchase:', purchase._id, transformError);
-        return purchase;
-      }
-    });
-    
-    console.log('15. Sending response with', transformedPurchases.length, 'purchases');
-    res.json(transformedPurchases);
+    console.log("🟦 Purchases fetched count:", purchases.length);
+    res.json(purchases);
   } catch (err) {
-    console.error('=== Error in getPurchasesByUser ===');
-    console.error('Error details:', {
-      name: err.name,
-      message: err.message,
-      code: err.code,
-      userId: req.query.userId
-    });
-    console.error('Stack trace:', err.stack);
-
-    // Send a more specific error message based on the error type
-    if (err instanceof mongoose.Error.CastError) {
-      return res.status(400).json({
-        message: 'Invalid ID format',
-        details: err.message
-      });
-    }
-    if (err instanceof mongoose.Error.ValidationError) {
-      return res.status(400).json({
-        message: 'Validation error',
-        errors: err.errors
-      });
-    }
-    res.status(500).json({ 
-      message: 'Error fetching purchases',
-      error: process.env.NODE_ENV === 'development' ? {
-        message: err.message,
-        type: err.name,
-        code: err.code
-      } : 'Internal server error'
+    console.error("❌ Error in getPurchasesByUser:", err);
+    res.status(500).json({
+      message: "Server error in getPurchasesByUser",
+      error: err.message,
+      stack: err.stack,
     });
   }
 };
